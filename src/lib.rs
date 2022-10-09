@@ -8,7 +8,6 @@ use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use web_sys::{MouseEvent, Window};
 
-use crate::game::{Create};
 use crate::shapes::{Circle, Line, Point2d, Shapes};
 use game::Game;
 
@@ -46,19 +45,26 @@ const BLACK: RGB8 = RGB8 { r: 0, g: 0, b: 0 };
 
 fn draw(game: &Game) {
     let mouse = game.mouse();
+    if mouse.is_none() {
+        return;
+    }
+
+    let view = game.view();
+    let mouse = mouse.unwrap();
+    let view_mouse: Point2d = Point2d { x: mouse.x - view.x, y: mouse.y - view.y };
 
     let items = Shapes {
         items: vec![
-            Box::new(Line {
-                from: Point2d { x: 100., y: 150. },
-                to: mouse,
-                color: BLACK,
-            }),
-            Box::new(Circle {
-                center_point: mouse,
-                radius: 3,
-                color: BLACK,
-            }),
+            Line::new(
+                Point2d { x: 0., y: 0. },
+                view_mouse,
+                BLACK,
+            ),
+            Circle::new(
+                view_mouse,
+                3,
+                BLACK,
+            ),
         ]
     };
 
