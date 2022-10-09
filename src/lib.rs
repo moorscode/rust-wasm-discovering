@@ -1,6 +1,8 @@
 mod game;
 mod shapes;
+mod ray;
 
+use ray::{Ray, Intersects};
 use rgb::*;
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -8,7 +10,7 @@ use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use web_sys::{MouseEvent, Window};
 
-use crate::shapes::{Circle, Line, Point2d, Shapes};
+use crate::shapes::{Circle, Draw, Line, Point2d, Shapes};
 use game::Game;
 
 macro_rules! enclose {
@@ -40,8 +42,10 @@ impl From<MouseEvent> for Point2d {
 }
 
 // const RED: RGB8 = RGB8 { r: 255, g: 0, b: 0 };
+const GREEN: RGB8 = RGB8 { r: 0, g: 255, b: 0 };
 // const WHITE: RGB8 = RGB8 { r: 255, g: 255, b: 255 };
 const BLACK: RGB8 = RGB8 { r: 0, g: 0, b: 0 };
+const CENTER_POINT: Point2d = Point2d { x: 0., y: 0. };
 
 fn draw(game: &Game) {
     let mouse = game.mouse();
@@ -53,23 +57,40 @@ fn draw(game: &Game) {
     let mouse = mouse.unwrap();
     let view_mouse: Point2d = Point2d { x: mouse.x - view.x, y: mouse.y - view.y };
 
-    let items = Shapes {
-        items: vec![
-            Line::new(
-                Point2d { x: 0., y: 0. },
-                view_mouse,
-                BLACK,
-            ),
-            Circle::new(
-                view_mouse,
+    let line = Line::new(
+        Point2d { x: 100., y: -100. },
+        Point2d { x: 100., y: 100. },
+        BLACK,
+    );
+
+    let mut items: Vec<Box<dyn Draw>> = vec![];
+
+    let ray = Ray::new(CENTER_POINT, view_mouse );
+
+    let intersection = ray.intersects(&line);
+    match intersection {
+        Some(point) => {
+            items.push(Circle::new(
+                point,
                 3,
                 BLACK,
-            ),
-        ]
-    };
+            ));
+            items.push( Line::new(
+               CENTER_POINT,
+                point,
+                GREEN,
+            ));
+        }
+        None => ()
+    }
+
+    let ray_line = Line::new(Point2d { x: 0., y: 0. }, Point2d { x: ray.direction().x * 10., y: ray.direction().y * 10. }, BLACK);
+
+    items.push(ray_line);
+    items.push(line);
 
     game.clear();
-    game.draw(&items);
+    game.draw(&Shapes { items });
 }
 
 fn game_loop(game: Game) {

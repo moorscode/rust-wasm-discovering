@@ -13,6 +13,13 @@ pub struct Point2d {
     pub y: f64,
 }
 
+impl Point2d {
+    pub fn normalized( x: f64, y: f64 ) -> Self {
+        let u = (x.powf(2.) + y.powf(2.)).sqrt();
+        Point2d { x: x / u, y: y / u }
+    }
+}
+
 #[derive(Clone, Copy)]
 pub struct Line {
     pub from: Point2d,
