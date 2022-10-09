@@ -93,4 +93,18 @@ impl Game {
     pub fn view(&self) -> Point2d {
         self.view.borrow().offset
     }
+
+    pub fn shift_view_by(&self, offset: Point2d) -> () {
+        let mut view = self.view.borrow_mut();
+        view.offset = Point2d { x: view.offset.x + offset.x, y: view.offset.y + offset.y };
+    }
+
+    pub fn reset_view(&self) -> () {
+        let mut view = self.view.borrow_mut();
+        view.offset = Point2d { x: self.canvas.width() as f64 / 2., y: self.canvas.height() as f64 / 2. };
+    }
+
+    pub fn canvas(&self) -> &HtmlCanvasElement {
+        &self.canvas
+    }
 }

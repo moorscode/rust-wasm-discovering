@@ -2,16 +2,16 @@ mod game;
 mod shapes;
 mod ray;
 
-use ray::{Ray, Intersects};
 use rgb::*;
 use std::cell::RefCell;
 use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
-use web_sys::{MouseEvent, Window};
+use web_sys::{MouseEvent, Window, KeyboardEvent, Document};
 
-use crate::shapes::{Circle, Draw, Line, Point2d, Shapes};
+use crate::shapes::{Draw, Line, Point2d, Shapes};
 use game::Game;
+use ray::{Ray, Intersects};
 
 macro_rules! enclose {
     ( ($( $x:ident ),*) $y:expr ) => {
@@ -59,24 +59,19 @@ fn draw(game: &Game) {
 
     let line = Line::new(
         Point2d { x: 100., y: -100. },
-        Point2d { x: 100., y: 100. },
+        Point2d { x: 150., y: 100. },
         BLACK,
     );
 
     let mut items: Vec<Box<dyn Draw>> = vec![];
 
-    let ray = Ray::new(CENTER_POINT, view_mouse );
+    let ray = Ray::new(CENTER_POINT, view_mouse);
 
     let intersection = ray.intersects(&line);
     match intersection {
         Some(point) => {
-            items.push(Circle::new(
-                point,
-                3,
-                BLACK,
-            ));
-            items.push( Line::new(
-               CENTER_POINT,
+            items.push(Line::new(
+                CENTER_POINT,
                 point,
                 GREEN,
             ));
@@ -84,7 +79,7 @@ fn draw(game: &Game) {
         None => ()
     }
 
-    let ray_line = Line::new(Point2d { x: 0., y: 0. }, Point2d { x: ray.direction().x * 10., y: ray.direction().y * 10. }, BLACK);
+    let ray_line = Line::new(CENTER_POINT, Point2d { x: ray.direction().x * 10., y: ray.direction().y * 10. }, BLACK);
 
     items.push(ray_line);
     items.push(line);
@@ -113,11 +108,30 @@ pub fn start() -> Result<(), JsValue> {
 
     let game = Game::create("#canvas");
 
+    // Mouse tracker.
     {
         let closure = Closure::<dyn FnMut(_)>::new(
             enclose!( (game ) move |event:MouseEvent| { game.set_mouse(event); } ),
         );
-        window().add_event_listener_with_callback("mousemove", closure.as_ref().unchecked_ref())?;
+        game.canvas().add_event_listener_with_callback("mousemove", closure.as_ref().unchecked_ref())?;
+        closure.forget();
+    }
+
+    // Keyboard listener.
+    {
+        let closure = Closure::<dyn FnMut(_)>::new(
+            enclose!( (game) move |event:KeyboardEvent| {
+                match event.key_code() {
+                    37 => { game.shift_view_by( Point2d { x: -10., y: 0. } ); } // left
+                    38 => { game.shift_view_by( Point2d { x: 0., y: -10. } ); } // up
+                    39 => { game.shift_view_by( Point2d { x: 10., y: 0. } ); } // right
+                    40 => { game.shift_view_by( Point2d { x: 0., y: 10. } ); } // down
+                    67 => { game.reset_view(); } // "C"
+                    _ => ()
+                }
+            }),
+        );
+        window().add_event_listener_with_callback("keydown", closure.as_ref().unchecked_ref())?;
         closure.forget();
     }
 
