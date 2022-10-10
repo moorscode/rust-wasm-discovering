@@ -1,8 +1,9 @@
-use std::{cell::RefCell, rc::Rc, f64};
-use std::cell::RefMut;
+use std::{cell::RefCell, rc::Rc, f64, cell::RefMut};
+use std::cell::Ref;
+use chrono::{DateTime, Utc};
 use wasm_bindgen::JsCast;
 use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement, Window, Document};
-use crate::Point2d;
+use crate::{ParticleSystem, Point2d};
 use crate::shapes::{Shapes, Draw};
 
 fn window() -> Window {
@@ -45,8 +46,15 @@ impl Default for Inner {
     }
 }
 
+#[derive(Clone)]
 pub struct View {
     pub offset: Point2d,
+}
+
+impl View {
+    pub fn transform( &self, point: &Point2d ) -> Point2d {
+        Point2d { x: point.x + self.offset.x, y: point.y + self.offset.y }
+    }
 }
 
 #[derive(Clone)]
@@ -55,6 +63,8 @@ pub struct Game {
     view: Rc<RefCell<View>>,
     canvas: HtmlCanvasElement,
     context: CanvasRenderingContext2d,
+    particle_system: ParticleSystem,
+    time: DateTime<Utc>,
 }
 
 impl Game {
@@ -65,16 +75,21 @@ impl Game {
         let offset: Point2d = Point2d { x: canvas.width() as f64 / 2., y: canvas.height() as f64 / 2. };
         let view: View = View { offset };
 
-        Game {
+        let particle_system = ParticleSystem::default();
+
+        Self {
             inner: Rc::new(RefCell::new(Inner::default())),
             view: Rc::new(RefCell::new(view)),
             context,
             canvas,
+            time: Utc::now(),
+            particle_system,
         }
     }
 
-    pub fn draw(&self, shapes: &Shapes) -> () {
+    pub fn draw(&self, shapes: &Shapes) -> () { 
         shapes.draw(&self.context, &self.view.borrow());
+        self.particle_system.tick(self);
     }
 
     pub fn clear(&self) -> () {
@@ -90,8 +105,12 @@ impl Game {
         self.inner.borrow().mouse
     }
 
-    pub fn view(&self) -> Point2d {
-        self.view.borrow().offset
+    pub fn view(&self) -> Ref<View> {
+        self.view.borrow()
+    }
+
+    pub fn context(&self) -> &CanvasRenderingContext2d {
+        &self.context
     }
 
     pub fn shift_view_by(&self, offset: Point2d) -> () {
@@ -106,5 +125,13 @@ impl Game {
 
     pub fn canvas(&self) -> &HtmlCanvasElement {
         &self.canvas
+    }
+
+    pub fn time(&self) -> DateTime<Utc> {
+        self.time
+    }
+    
+    pub fn particle_system(&self) -> &ParticleSystem {
+        &self.particle_system
     }
 }

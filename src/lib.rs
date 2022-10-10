@@ -1,17 +1,19 @@
 mod game;
 mod shapes;
 mod ray;
+mod particles;
 
 use rgb::*;
 use std::cell::RefCell;
 use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
-use web_sys::{MouseEvent, Window, KeyboardEvent, Document};
+use web_sys::{MouseEvent, Window, KeyboardEvent};
 
 use crate::shapes::{Draw, Line, Point2d, Shapes};
 use game::Game;
-use ray::{Ray, Intersects};
+use ray::Ray;
+use crate::particles::{Particle, ParticleSystem, ParticlePixel};
 
 macro_rules! enclose {
     ( ($( $x:ident ),*) $y:expr ) => {
@@ -20,6 +22,12 @@ macro_rules! enclose {
             $y
         }
     };
+}
+
+pub fn console_log(log: &str) {
+    let array = js_sys::Array::new();
+    array.push(&JsValue::from_str(log));
+    web_sys::console::log(&array);
 }
 
 fn window() -> Window {
@@ -41,7 +49,7 @@ impl From<MouseEvent> for Point2d {
     }
 }
 
-// const RED: RGB8 = RGB8 { r: 255, g: 0, b: 0 };
+const RED: RGB8 = RGB8 { r: 255, g: 0, b: 0 };
 const GREEN: RGB8 = RGB8 { r: 0, g: 255, b: 0 };
 // const WHITE: RGB8 = RGB8 { r: 255, g: 255, b: 255 };
 const BLACK: RGB8 = RGB8 { r: 0, g: 0, b: 0 };
@@ -49,14 +57,7 @@ const CENTER_POINT: Point2d = Point2d { x: 0., y: 0. };
 
 fn draw(game: &Game) {
     let mouse = game.mouse();
-    if mouse.is_none() {
-        return;
-    }
-
-    let view = game.view();
-    let mouse = mouse.unwrap();
-    let view_mouse: Point2d = Point2d { x: mouse.x - view.x, y: mouse.y - view.y };
-
+    let view = game.view().offset;
     let line = Line::new(
         Point2d { x: 100., y: -100. },
         Point2d { x: 150., y: 100. },
@@ -65,23 +66,33 @@ fn draw(game: &Game) {
 
     let mut items: Vec<Box<dyn Draw>> = vec![];
 
-    let ray = Ray::new(CENTER_POINT, view_mouse);
+    if mouse.is_some() {
+        let mouse = mouse.unwrap();
+        let view_mouse: Point2d = Point2d { x: mouse.x - view.x, y: mouse.y - view.y };
+        let ray = Ray::new(CENTER_POINT, view_mouse);
 
-    let intersection = ray.intersects(&line);
-    match intersection {
-        Some(point) => {
-            items.push(Line::new(
-                CENTER_POINT,
-                point,
-                GREEN,
-            ));
+        let intersection = ray.intersects(&line);
+        match intersection {
+            Some(point) => {
+                items.push(Line::new(
+                    CENTER_POINT,
+                    point,
+                    GREEN,
+                ));
+            }
+            None => {
+                items.push(Line::new(
+                    CENTER_POINT,
+                    Point2d { x: ray.direction().x * 1000., y: ray.direction().y * 1000. },
+                    BLACK,
+                ));
+            }
         }
-        None => ()
+
+        let ray_line = Line::new(CENTER_POINT, Point2d { x: ray.direction().x * 10., y: ray.direction().y * 10. }, BLACK);
+        items.push(ray_line);
     }
 
-    let ray_line = Line::new(CENTER_POINT, Point2d { x: ray.direction().x * 10., y: ray.direction().y * 10. }, BLACK);
-
-    items.push(ray_line);
     items.push(line);
 
     game.clear();
@@ -134,6 +145,9 @@ pub fn start() -> Result<(), JsValue> {
         window().add_event_listener_with_callback("keydown", closure.as_ref().unchecked_ref())?;
         closure.forget();
     }
+
+    let particle_system = game.particle_system();
+    particle_system.add_particle(Particle::new(ParticlePixel { position: CENTER_POINT, color: RED }, game.time()));
 
     game_loop(game);
 
