@@ -1,3 +1,5 @@
+#[allow(dead_code)]
+
 use std::f64;
 use rgb::RGB;
 use web_sys::CanvasRenderingContext2d;

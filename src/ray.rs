@@ -35,7 +35,7 @@ impl Ray {
         self.direction.borrow().vector
     }
 
-    pub fn intersects(&self, line: &Line) -> Option<Point2d> {
+    pub fn intersects_line(&self, line: &Line) -> Option<Point2d> {
         let direction = self.direction.borrow().vector;
 
         let Point2d { x: x1, y: y1 } = line.from;

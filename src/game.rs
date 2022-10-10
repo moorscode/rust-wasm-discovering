@@ -1,9 +1,10 @@
-use std::{cell::RefCell, rc::Rc, f64, cell::RefMut};
-use std::cell::Ref;
+use std::{cell::RefCell, cell::Ref, rc::Rc, f64, cell::RefMut};
 use chrono::{DateTime, Utc};
 use wasm_bindgen::JsCast;
 use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement, Window, Document};
-use crate::{ParticleSystem, Point2d};
+
+use crate::Point2d;
+use crate::particle_system::ParticleSystem;
 use crate::shapes::{Shapes, Draw};
 
 fn window() -> Window {

@@ -1,19 +1,23 @@
 mod game;
 mod shapes;
 mod ray;
-mod particles;
+mod particle;
+mod particle_animation;
+mod particle_system;
 
 use rgb::*;
 use std::cell::RefCell;
 use std::rc::Rc;
+use js_sys::Math::random;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use web_sys::{MouseEvent, Window, KeyboardEvent};
 
 use crate::shapes::{Draw, Line, Point2d, Shapes};
+use crate::particle_animation::{default_behaviour, default_velocity};
+use crate::particle::{Particle, ParticlePixel};
 use game::Game;
 use ray::Ray;
-use crate::particles::{Particle, ParticleSystem, ParticlePixel};
 
 macro_rules! enclose {
     ( ($( $x:ident ),*) $y:expr ) => {
@@ -58,20 +62,42 @@ const CENTER_POINT: Point2d = Point2d { x: 0., y: 0. };
 fn draw(game: &Game) {
     let mouse = game.mouse();
     let view = game.view().offset;
+
     let line = Line::new(
         Point2d { x: 100., y: -100. },
         Point2d { x: 150., y: 100. },
         BLACK,
     );
 
+    let line2 = Line::new(
+        Point2d { x: -100., y: -100. },
+        Point2d { x: -150., y: 100. },
+        BLACK,
+    );
+
+    let mut lines: Vec<Box<Line>> = vec![];
+
     let mut items: Vec<Box<dyn Draw>> = vec![];
+    items.push(line.clone());
+    items.push(line2.clone());
+
+    lines.push(line);
+    lines.push(line2);
 
     if mouse.is_some() {
         let mouse = mouse.unwrap();
         let view_mouse: Point2d = Point2d { x: mouse.x - view.x, y: mouse.y - view.y };
         let ray = Ray::new(CENTER_POINT, view_mouse);
 
-        let intersection = ray.intersects(&line);
+        let mut intersection = None;
+
+        for line in lines.iter() {
+            intersection = ray.intersects_line(&line);
+            if intersection.is_some() {
+                break;
+            }
+        }
+
         match intersection {
             Some(point) => {
                 items.push(Line::new(
@@ -79,6 +105,17 @@ fn draw(game: &Game) {
                     point,
                     GREEN,
                 ));
+
+                let particle_system = game.particle_system();
+                particle_system.add_particle(
+                    Particle::new(
+                        ParticlePixel { position: point, color: RED, alpha: 1.0 },
+                        Point2d { x: ray.direction().x * -1., y: ray.direction().y * -1. },
+                        0.4 + random() * 0.3,
+                        default_velocity,
+                        default_behaviour,
+                    )
+                );
             }
             None => {
                 items.push(Line::new(
@@ -92,8 +129,6 @@ fn draw(game: &Game) {
         let ray_line = Line::new(CENTER_POINT, Point2d { x: ray.direction().x * 10., y: ray.direction().y * 10. }, BLACK);
         items.push(ray_line);
     }
-
-    items.push(line);
 
     game.clear();
     game.draw(&Shapes { items });
@@ -145,9 +180,6 @@ pub fn start() -> Result<(), JsValue> {
         window().add_event_listener_with_callback("keydown", closure.as_ref().unchecked_ref())?;
         closure.forget();
     }
-
-    let particle_system = game.particle_system();
-    particle_system.add_particle(Particle::new(ParticlePixel { position: CENTER_POINT, color: RED }, game.time()));
 
     game_loop(game);
 
