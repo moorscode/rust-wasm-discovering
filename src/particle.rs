@@ -109,20 +109,12 @@ impl Particle {
         time.sub(self.start_time)
     }
 
-    pub fn start_pixel(&self) -> ParticlePixel {
-        self.start_pixel
+    pub fn velocity(&self) -> f64 {
+        *self.velocity.borrow()
     }
 
     pub fn pixel(&self) -> Option<ParticlePixel> {
         self.render.borrow().pixel
-    }
-
-    fn set_velocity(&self, velocity: f64) -> () {
-        *self.velocity.borrow_mut() = velocity;
-    }
-
-    pub fn velocity(&self) -> f64 {
-        *self.velocity.borrow()
     }
 
     pub fn tick(&self, time: DateTime<Utc>) -> Option<ParticlePixel> {
@@ -132,5 +124,12 @@ impl Particle {
         let mut render: RefMut<Render> = self.render.borrow_mut();
         render.pixel = pixel;
         pixel
+    }
+
+    fn start_pixel(&self) -> ParticlePixel {
+        self.start_pixel
+    }
+    fn set_velocity(&self, velocity: f64) -> () {
+        *self.velocity.borrow_mut() = velocity;
     }
 }

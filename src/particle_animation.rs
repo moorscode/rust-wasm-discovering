@@ -24,11 +24,21 @@ pub fn default_behaviour(start_pixel: &ParticlePixel, current_pixel: Option<Part
     Some(new)
 }
 
-pub fn default_velocity(
+pub fn standard_increasing(
     velocity: &f64,
     delta: Duration,
 ) -> f64 {
-    let multiplier: f64 = 1.05;
+    let multiplier: f64 = 1.10;
+    let modulo = delta.num_milliseconds() / 100;
+    return velocity * (multiplier.powf(modulo as f64 + 1.));
+}
+
+pub fn standard_decreasing(
+    velocity: &f64,
+    delta: Duration,
+) -> f64 {
+
+    let multiplier: f64 = 0.95;
     let modulo = delta.num_milliseconds() / 100;
     return velocity * (multiplier.powf(modulo as f64 + 1.));
 }

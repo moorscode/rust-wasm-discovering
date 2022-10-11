@@ -4,6 +4,7 @@ mod ray;
 mod particle;
 mod particle_animation;
 mod particle_system;
+mod draw;
 
 use rgb::*;
 use std::cell::RefCell;
@@ -13,11 +14,12 @@ use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use web_sys::{MouseEvent, Window, KeyboardEvent};
 
-use crate::shapes::{Draw, Line, Point2d, Shapes};
-use crate::particle_animation::{default_behaviour, default_velocity};
+use crate::shapes::{Line, Point2d, Shapes};
+use crate::particle_animation::*;
 use crate::particle::{Particle, ParticlePixel};
 use game::Game;
 use ray::Ray;
+use crate::draw::Draw;
 
 macro_rules! enclose {
     ( ($( $x:ident ),*) $y:expr ) => {
@@ -112,7 +114,7 @@ fn draw(game: &Game) {
                         ParticlePixel { position: point, color: RED, alpha: 1.0 },
                         Point2d { x: ray.direction().x * -1., y: ray.direction().y * -1. },
                         0.4 + random() * 0.3,
-                        default_velocity,
+                        standard_increasing,
                         default_behaviour,
                     )
                 );

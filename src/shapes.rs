@@ -3,6 +3,7 @@
 use std::f64;
 use rgb::RGB;
 use web_sys::CanvasRenderingContext2d;
+use crate::Draw;
 use crate::game::View;
 
 pub fn rgb(rgb: RGB<u8>) -> String {
@@ -31,10 +32,7 @@ pub struct Line {
 
 impl Line {
     pub fn new(a: Point2d, b: Point2d, color: RGB<u8>) -> Box<Line> {
-        let from = if a.x < b.x { &a } else { &b };
-        let to = if a.x < b.x { &b } else { &a };
-
-        Box::new(Line { from: *from, to: *to, color })
+        Box::new(Line { from: a, to: b, color })
     }
 }
 
@@ -49,10 +47,6 @@ impl Circle {
     pub fn new(center: Point2d, radius: u8, color: RGB<u8>) -> Box<Circle> {
         Box::new(Circle { center_point: center, radius, color })
     }
-}
-
-pub trait Draw {
-    fn draw(&self, context: &CanvasRenderingContext2d, view: &View) -> ();
 }
 
 pub struct Shapes {

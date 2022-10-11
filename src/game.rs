@@ -3,9 +3,9 @@ use chrono::{DateTime, Utc};
 use wasm_bindgen::JsCast;
 use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement, Window, Document};
 
-use crate::Point2d;
+use crate::{Draw, Point2d};
 use crate::particle_system::ParticleSystem;
-use crate::shapes::{Shapes, Draw};
+use crate::shapes::Shapes;
 
 fn window() -> Window {
     web_sys::window().expect("no global `window` exists")
@@ -88,7 +88,7 @@ impl Game {
         }
     }
 
-    pub fn draw(&self, shapes: &Shapes) -> () { 
+    pub fn draw(&self, shapes: &Shapes) -> () {
         shapes.draw(&self.context, &self.view.borrow());
         self.particle_system.tick(self);
     }
@@ -131,7 +131,7 @@ impl Game {
     pub fn time(&self) -> DateTime<Utc> {
         self.time
     }
-    
+
     pub fn particle_system(&self) -> &ParticleSystem {
         &self.particle_system
     }
