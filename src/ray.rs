@@ -11,6 +11,14 @@ pub struct Ray {
     direction: Rc<RefCell<Direction>>,
 }
 
+pub struct Intersection {
+    pub point: Point2d,
+    pub direction: Point2d,
+    pub target: Line,
+    pub distance: f64,
+    pub place_on_line: f64,
+}
+
 impl Ray {
     fn create_direction(source: Point2d, point: Point2d) -> Point2d {
         let look_at = Point2d { x: point.x - source.x, y: point.y - source.y };
@@ -35,7 +43,7 @@ impl Ray {
         self.direction.borrow().vector
     }
 
-    pub fn intersects_line(&self, line: &Line) -> Option<Point2d> {
+    pub fn intersects_line(&self, line: &Line) -> Option<Intersection> {
         let direction = self.direction.borrow().vector;
 
         let Point2d { x: x1, y: y1 } = line.from;
@@ -57,20 +65,26 @@ impl Ray {
 
         let t = (e * c - f * d) / denominator;
         // It should be on the target line.
-        if t <= 0.0 || t >= 1.0 {
+        if t < 0.0 || t > 1.0 {
             return None;
         }
 
         let u = -(a * f - b * e) / denominator;
         // As we're using a direction, we invalidate any intersection "behind" the source point.
-        if u <= 0.0 {
+        if u < 0.0 {
             return None;
         }
 
         Some(
-            Point2d {
-                x: x1 + t * (x2 - x1),
-                y: y1 + t * (y2 - y1),
+            Intersection {
+                point: Point2d {
+                    x: x1 + t * (x2 - x1),
+                    y: y1 + t * (y2 - y1),
+                },
+                target: line.clone(),
+                place_on_line: t,
+                distance: u,
+                direction: direction.clone(),
             }
         )
     }

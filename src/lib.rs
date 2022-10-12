@@ -62,19 +62,36 @@ const GREEN: RGB8 = RGB8 { r: 0, g: 255, b: 0 };
 const BLACK: RGB8 = RGB8 { r: 0, g: 0, b: 0 };
 const CENTER_POINT: Point2d = Point2d { x: 0., y: 0. };
 
+const DIR_UP: Point2d = Point2d { x: 0., y: -1. };
+const DIR_DOWN: Point2d = Point2d { x: 0., y: 1. };
+const DIR_LEFT: Point2d = Point2d { x: -1., y: 0. };
+const DIR_RIGHT: Point2d = Point2d { x: 1., y: 0. };
+
 fn draw(game: &Game) {
     let mouse: Option<Point2d> = game.mouse();
     let view: Point2d = game.view().offset;
 
     let line: Box<Line> = Line::new(
-        Point2d { x: 100., y: -100. },
-        Point2d { x: 150., y: 100. },
+        Point2d { x: 200., y: -200. },
+        Point2d { x: 200., y: 200. },
         BLACK,
     );
 
     let line2: Box<Line> = Line::new(
-        Point2d { x: -100., y: -100. },
-        Point2d { x: -150., y: 100. },
+        Point2d { x: -200., y: -200. },
+        Point2d { x: -200., y: 200. },
+        BLACK,
+    );
+
+    let line3: Box<Line> = Line::new(
+        Point2d { x: -200., y: 200. },
+        Point2d { x: 200., y: 200. },
+        BLACK,
+    );
+
+    let line4: Box<Line> = Line::new(
+        Point2d { x: -200., y: -200. },
+        Point2d { x: 200., y: -200. },
         BLACK,
     );
 
@@ -83,9 +100,13 @@ fn draw(game: &Game) {
     let mut items: Vec<Box<dyn Draw>> = vec![];
     items.push(line.clone());
     items.push(line2.clone());
+    items.push(line3.clone());
+    items.push(line4.clone());
 
     lines.push(line);
     lines.push(line2);
+    lines.push(line3);
+    lines.push(line4);
 
     if mouse.is_some() {
         let mouse = mouse.unwrap();
@@ -102,20 +123,28 @@ fn draw(game: &Game) {
         }
 
         match intersection {
-            Some(point) => {
+            Some(intersection) => {
                 items.push(Line::new(
                     CENTER_POINT,
-                    point,
+                    intersection.point,
                     GREEN,
                 ));
 
-                let dir_float = -0.2 + random() * 0.4;
+                let dir_towards_center = Point2d { x: ray.direction().x * -1., y: ray.direction().y * -1. };
+
+                let dir_y = intersection.direction.y * if intersection.direction.x > 0.705 || intersection.direction.x < -0.705 { 1. } else { -1. };
+                let dir_x = intersection.direction.x * if intersection.direction.y > 0.705 || intersection.direction.y < -0.705 { 1. } else { -1. };
+                let dir_following_ray_reflected = Point2d { x: dir_x, y: dir_y };
+
+                let dir_y = intersection.direction.y * if intersection.direction.x > 0.705 || intersection.direction.x < -0.705 { -1. } else { 1. };
+                let dir_x = intersection.direction.x * if intersection.direction.y > 0.705 || intersection.direction.y < -0.705 { -1. } else { 1. };
+                let dir_following_ray_reflected_inverted = Point2d { x: dir_x, y: dir_y };
 
                 let particle_system: &ParticleSystem = game.particle_system();
                 particle_system.add_particle(
                     Particle::new(
-                        ParticlePixel { position: point, color: RED, alpha: 1.0 },
-                        Point2d { x: ( ray.direction().x * -1. ) + dir_float, y: ( ray.direction().y * -1. ) + dir_float },
+                        ParticlePixel { position: intersection.point, color: RED, alpha: 1.0 },
+                        dir_following_ray_reflected_inverted,
                         0.4 + random() * 0.3,
                         1500,
                         particle_velocity_increasing,
