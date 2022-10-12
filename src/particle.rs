@@ -35,11 +35,13 @@ pub struct Particle {
         direction: &Point2d,
         velocity: &f64,
         delta: Duration,
+        lifetime: &u32,
     ) -> Option<ParticlePixel>,
     update_velocity: fn(
         velocity: &f64,
         delta: Duration,
     ) -> f64,
+    lifetime: u32,
 }
 
 impl PartialEq for Particle {
@@ -61,11 +63,11 @@ pub struct ParticlePixel {
 
 impl Draw for Particle {
     fn draw(&self, context: &CanvasRenderingContext2d, view: &View) -> () {
-        let pixel = self.render.borrow().pixel;
+        let pixel: Option<ParticlePixel> = self.render.borrow().pixel;
         match pixel {
             Some(pixel) => {
-                let color = rgb(pixel.color);
-                let coords = view.transform(&pixel.position);
+                let color: String = rgb(pixel.color);
+                let coords: Point2d = view.transform(&pixel.position);
                 context.set_global_alpha(pixel.alpha);
                 context.set_fill_style(&color.into());
                 context.fill_rect(coords.x, coords.y, 2., 2.);
@@ -81,6 +83,7 @@ impl Particle {
         pixel: ParticlePixel,
         direction: Point2d,
         velocity: f64,
+        lifetime: u32,
         update_velocity: fn(
             velocity: &f64,
             delta: Duration,
@@ -91,6 +94,7 @@ impl Particle {
             direction: &Point2d,
             velocity: &f64,
             delta: Duration,
+            lifetime: &u32,
         ) -> Option<ParticlePixel>,
     ) -> Self {
         Self {
@@ -102,6 +106,7 @@ impl Particle {
             velocity: Rc::new(RefCell::new(velocity)),
             start_velocity: velocity,
             update_velocity,
+            lifetime,
         }
     }
 
@@ -119,7 +124,7 @@ impl Particle {
 
     pub fn tick(&self, time: DateTime<Utc>) -> Option<ParticlePixel> {
         self.set_velocity((self.update_velocity)(&self.start_velocity, self.delta(time)));
-        let pixel = (self.tick)(&self.start_pixel(), self.pixel(), &self.direction, &self.velocity(), self.delta(time));
+        let pixel: Option<ParticlePixel> = (self.tick)(&self.start_pixel(), self.pixel(), &self.direction, &self.velocity(), self.delta(time), &self.lifetime);
 
         let mut render: RefMut<Render> = self.render.borrow_mut();
         render.pixel = pixel;

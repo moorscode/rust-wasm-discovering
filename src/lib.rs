@@ -20,6 +20,7 @@ use crate::particle::{Particle, ParticlePixel};
 use game::Game;
 use ray::Ray;
 use crate::draw::Draw;
+use crate::particle_system::ParticleSystem;
 
 macro_rules! enclose {
     ( ($( $x:ident ),*) $y:expr ) => {
@@ -62,16 +63,16 @@ const BLACK: RGB8 = RGB8 { r: 0, g: 0, b: 0 };
 const CENTER_POINT: Point2d = Point2d { x: 0., y: 0. };
 
 fn draw(game: &Game) {
-    let mouse = game.mouse();
-    let view = game.view().offset;
+    let mouse: Option<Point2d> = game.mouse();
+    let view: Point2d = game.view().offset;
 
-    let line = Line::new(
+    let line: Box<Line> = Line::new(
         Point2d { x: 100., y: -100. },
         Point2d { x: 150., y: 100. },
         BLACK,
     );
 
-    let line2 = Line::new(
+    let line2: Box<Line> = Line::new(
         Point2d { x: -100., y: -100. },
         Point2d { x: -150., y: 100. },
         BLACK,
@@ -108,12 +109,13 @@ fn draw(game: &Game) {
                     GREEN,
                 ));
 
-                let particle_system = game.particle_system();
+                let particle_system: &ParticleSystem = game.particle_system();
                 particle_system.add_particle(
                     Particle::new(
                         ParticlePixel { position: point, color: RED, alpha: 1.0 },
                         Point2d { x: ray.direction().x * -1., y: ray.direction().y * -1. },
                         0.4 + random() * 0.3,
+                        1500,
                         standard_increasing,
                         default_behaviour,
                     )
@@ -128,7 +130,7 @@ fn draw(game: &Game) {
             }
         }
 
-        let ray_line = Line::new(CENTER_POINT, Point2d { x: ray.direction().x * 10., y: ray.direction().y * 10. }, BLACK);
+        let ray_line: Box<Line> = Line::new(CENTER_POINT, Point2d { x: ray.direction().x * 10., y: ray.direction().y * 10. }, BLACK);
         items.push(ray_line);
     }
 
