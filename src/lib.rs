@@ -116,8 +116,8 @@ fn draw(game: &Game) {
                         Point2d { x: ray.direction().x * -1., y: ray.direction().y * -1. },
                         0.4 + random() * 0.3,
                         1500,
-                        standard_increasing,
-                        default_behaviour,
+                        particle_velocity_increasing,
+                        particle_tick_move_and_fade_out,
                     )
                 );
             }
