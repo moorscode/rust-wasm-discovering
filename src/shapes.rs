@@ -1,5 +1,4 @@
 #[allow(dead_code)]
-
 use std::f64;
 use rgb::RGB;
 use web_sys::CanvasRenderingContext2d;
@@ -18,7 +17,7 @@ pub struct Point2d {
 
 impl Point2d {
     pub fn normalize(x: f64, y: f64) -> Self {
-        let u = (x.powf(2.) + y.powf(2.)).sqrt();
+        let u: f64 = (x.powi(2) + y.powi(2)).sqrt();
         Point2d { x: x / u, y: y / u }
     }
 }

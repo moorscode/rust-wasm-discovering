@@ -109,11 +109,13 @@ fn draw(game: &Game) {
                     GREEN,
                 ));
 
+                let dir_float = -0.2 + random() * 0.4;
+
                 let particle_system: &ParticleSystem = game.particle_system();
                 particle_system.add_particle(
                     Particle::new(
                         ParticlePixel { position: point, color: RED, alpha: 1.0 },
-                        Point2d { x: ray.direction().x * -1., y: ray.direction().y * -1. },
+                        Point2d { x: ( ray.direction().x * -1. ) + dir_float, y: ( ray.direction().y * -1. ) + dir_float },
                         0.4 + random() * 0.3,
                         1500,
                         particle_velocity_increasing,

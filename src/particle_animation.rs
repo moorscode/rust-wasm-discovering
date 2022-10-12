@@ -29,8 +29,8 @@ pub fn particle_tick_move_and_fade_out(start_pixel: &ParticlePixel, current_pixe
     }
 
     let delta_milliseconds: f64 = delta.num_milliseconds() as f64;
-    let percentage: f64 = 1. - if delta_milliseconds > 0. { delta_milliseconds / *lifetime as f64 } else { 0. };
-    let alpha = start_pixel.alpha * percentage as f64;
+    let percentage: f64 = if delta_milliseconds > 0. { 1. - ( delta_milliseconds / *lifetime as f64 ) } else { 1. };
+    let alpha: f64 = start_pixel.alpha * percentage;
 
     let pixel = ParticlePixel {
         alpha,
@@ -46,7 +46,7 @@ pub fn particle_velocity_increasing(
 ) -> f64 {
     let multiplier: f64 = 1.10;
     let division: i64 = delta.num_milliseconds() / 100;
-    return velocity * (multiplier.powf(division as f64 + 1.));
+    return velocity * (multiplier.powi(division as i32 + 1));
 }
 
 pub fn particle_velocity_decreasing(
@@ -55,5 +55,5 @@ pub fn particle_velocity_decreasing(
 ) -> f64 {
     let multiplier: f64 = 0.95;
     let division: i64 = delta.num_milliseconds() / 100;
-    return velocity * (multiplier.powf(division as f64 + 1.));
+    return velocity * (multiplier.powi(division as i32 + 1));
 }
