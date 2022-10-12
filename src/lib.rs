@@ -7,19 +7,20 @@ mod particle_system;
 mod draw;
 
 use rgb::*;
-use std::cell::RefCell;
+use std::cell::{Ref, RefCell};
 use std::rc::Rc;
 use js_sys::Math::random;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use web_sys::{MouseEvent, Window, KeyboardEvent};
 
-use crate::shapes::{Line, Point2d, Shapes};
+use crate::shapes::{Circle, Line, Point2d, Shapes};
 use crate::particle_animation::*;
 use crate::particle::{Particle, ParticlePixel};
 use game::Game;
 use ray::Ray;
 use crate::draw::Draw;
+use crate::game::View;
 use crate::particle_system::ParticleSystem;
 
 macro_rules! enclose {
@@ -69,7 +70,7 @@ const DIR_RIGHT: Point2d = Point2d { x: 1., y: 0. };
 
 fn draw(game: &Game) {
     let mouse: Option<Point2d> = game.mouse();
-    let view: Point2d = game.view().offset;
+    let view: Ref<View> = game.view();
 
     let line: Box<Line> = Line::new(
         Point2d { x: 200., y: -200. },
@@ -95,6 +96,12 @@ fn draw(game: &Game) {
         BLACK,
     );
 
+    let circle: Box<Circle> = Circle::new(
+        view.center,
+        10,
+        BLACK,
+    );
+
     let mut lines: Vec<Box<Line>> = vec![];
 
     let mut items: Vec<Box<dyn Draw>> = vec![];
@@ -102,6 +109,7 @@ fn draw(game: &Game) {
     items.push(line2.clone());
     items.push(line3.clone());
     items.push(line4.clone());
+    items.push(circle);
 
     lines.push(line);
     lines.push(line2);
@@ -110,8 +118,8 @@ fn draw(game: &Game) {
 
     if mouse.is_some() {
         let mouse = mouse.unwrap();
-        let view_mouse: Point2d = Point2d { x: mouse.x - view.x, y: mouse.y - view.y };
-        let ray = Ray::new(CENTER_POINT, view_mouse);
+        let view_mouse: Point2d = Point2d { x: mouse.x - view.offset.x, y: mouse.y - view.offset.y };
+        let ray = Ray::new(view.center, view_mouse);
 
         let mut intersection = None;
 
@@ -125,7 +133,7 @@ fn draw(game: &Game) {
         match intersection {
             Some(intersection) => {
                 items.push(Line::new(
-                    CENTER_POINT,
+                    view.center,
                     intersection.point,
                     GREEN,
                 ));
@@ -154,14 +162,14 @@ fn draw(game: &Game) {
             }
             None => {
                 items.push(Line::new(
-                    CENTER_POINT,
-                    Point2d { x: ray.direction().x * 1000., y: ray.direction().y * 1000. },
+                    view.center,
+                    Point2d { x: view.center.x + ray.direction().x * 1000., y: view.center.y + ray.direction().y * 1000. },
                     BLACK,
                 ));
             }
         }
 
-        let ray_line: Box<Line> = Line::new(CENTER_POINT, Point2d { x: ray.direction().x * 10., y: ray.direction().y * 10. }, BLACK);
+        let ray_line: Box<Line> = Line::new(view.center, Point2d { x: view.center.x + ray.direction().x * 10., y: view.center.y + ray.direction().y * 10. }, BLACK);
         items.push(ray_line);
     }
 
@@ -203,10 +211,10 @@ pub fn start() -> Result<(), JsValue> {
         let closure = Closure::<dyn FnMut(_)>::new(
             enclose!( (game) move |event:KeyboardEvent| {
                 match event.key_code() {
-                    37 => { game.shift_view_by( Point2d { x: -10., y: 0. } ); } // left
-                    38 => { game.shift_view_by( Point2d { x: 0., y: -10. } ); } // up
-                    39 => { game.shift_view_by( Point2d { x: 10., y: 0. } ); } // right
-                    40 => { game.shift_view_by( Point2d { x: 0., y: 10. } ); } // down
+                    37 => { game.shift_view_by( Point2d { x: 10., y: 0. } ); } // left
+                    38 => { game.shift_view_by( Point2d { x: 0., y: 10. } ); } // up
+                    39 => { game.shift_view_by( Point2d { x: -10., y: 0. } ); } // right
+                    40 => { game.shift_view_by( Point2d { x: 0., y: -10. } ); } // down
                     67 => { game.reset_view(); } // "C"
                     _ => ()
                 }

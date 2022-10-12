@@ -50,10 +50,19 @@ impl Default for Inner {
 #[derive(Clone)]
 pub struct View {
     pub offset: Point2d,
+    initial: Point2d,
+    pub center: Point2d,
 }
 
 impl View {
-    pub fn transform( &self, point: &Point2d ) -> Point2d {
+    pub fn new(point: Point2d) -> Self {
+        Self {
+            initial: point,
+            offset: point,
+            center: Point2d { x: 0., y: 0. },
+        }
+    }
+    pub fn transform(&self, point: &Point2d) -> Point2d {
         Point2d { x: point.x + self.offset.x, y: point.y + self.offset.y }
     }
 }
@@ -74,7 +83,7 @@ impl Game {
         let context: CanvasRenderingContext2d = context(&canvas);
 
         let offset: Point2d = Point2d { x: canvas.width() as f64 / 2., y: canvas.height() as f64 / 2. };
-        let view: View = View { offset };
+        let view: View = View::new( offset );
 
         let particle_system = ParticleSystem::default();
 
@@ -117,6 +126,7 @@ impl Game {
     pub fn shift_view_by(&self, offset: Point2d) -> () {
         let mut view = self.view.borrow_mut();
         view.offset = Point2d { x: view.offset.x + offset.x, y: view.offset.y + offset.y };
+        view.center = Point2d { x: view.center.x - offset.x, y: view.center.y - offset.y };
     }
 
     pub fn reset_view(&self) -> () {
