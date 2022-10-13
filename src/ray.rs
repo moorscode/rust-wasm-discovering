@@ -1,5 +1,6 @@
 use std::cell::RefCell;
 use std::rc::Rc;
+use crate::browser::console_log;
 use crate::Point2d;
 use crate::shapes::Line;
 
@@ -18,6 +19,8 @@ pub struct Intersection {
     pub target: Line,
     pub distance: f64,
     pub place_on_line: f64,
+    pub angle: f64,
+    pub angle_direction: Point2d,
 }
 
 impl Ray {
@@ -71,15 +74,29 @@ impl Ray {
             return None;
         }
 
+        let point: Point2d = Point2d {
+            x: x1 + t * (x2 - x1),
+            y: y1 + t * (y2 - y1),
+        };
+
+        let corner = if t < 0.5 { &line.from } else { &line.to };
+
+        let a = (corner.x * corner.y) + (point.x * point.y);
+        let x1 = (corner.x.powi(2) + corner.y.powi(2)).sqrt();
+        let x2 = (point.y.powi(2) + point.y.powi(2)).sqrt();
+
+        let angle = (a / (x1 * x2)).cos();
+
+        console_log(&angle.to_string());
+
         Some(
             Intersection {
-                point: Point2d {
-                    x: x1 + t * (x2 - x1),
-                    y: y1 + t * (y2 - y1),
-                },
+                point,
                 target: line.clone(),
                 place_on_line: t,
                 distance: u,
+                angle,
+                angle_direction: Point2d { x: angle.cos(), y: angle.sin() },
                 direction: direction.clone(),
             }
         )

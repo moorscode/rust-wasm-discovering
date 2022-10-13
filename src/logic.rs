@@ -3,7 +3,8 @@
 use rgb::*;
 use std::cell::Ref;
 use js_sys::Math::random;
-use web_sys::MouseEvent;
+use web_sys::{MouseEvent};
+use crate::browser::console_log;
 
 use crate::Draw;
 use crate::shapes::*;
@@ -60,11 +61,11 @@ pub fn game_logic(game: &Game) {
     let mut lines: Vec<Box<Line>> = vec![];
 
     let mut items: Vec<Box<dyn Draw>> = vec![];
+    items.push(circle);
     items.push(line.clone());
     items.push(line2.clone());
     items.push(line3.clone());
     items.push(line4.clone());
-    items.push(circle);
 
     lines.push(line);
     lines.push(line2);
@@ -95,20 +96,22 @@ pub fn game_logic(game: &Game) {
 
                 let dir_towards_center = Point2d { x: ray.direction().x * -1., y: ray.direction().y * -1. };
 
-                // This is crap, should look at the angle between the closest point on the line and the ray direction.
-                let dir_y = intersection.direction.y * if intersection.direction.x > 0.705 || intersection.direction.x < -0.705 { 1. } else { -1. };
-                let dir_x = intersection.direction.x * if intersection.direction.y > 0.705 || intersection.direction.y < -0.705 { 1. } else { -1. };
-                let dir_following_ray_reflected = Point2d { x: dir_x, y: dir_y };
-
-                let dir_y = intersection.direction.y * if intersection.direction.x > 0.705 || intersection.direction.x < -0.705 { -1. } else { 1. };
-                let dir_x = intersection.direction.x * if intersection.direction.y > 0.705 || intersection.direction.y < -0.705 { -1. } else { 1. };
-                let dir_following_ray_reflected_inverted = Point2d { x: dir_x, y: dir_y };
+                items.push(
+                    Line::new(
+                        intersection.point,
+                        Point2d {
+                            x: intersection.point.x + intersection.angle_direction.x * 10.,
+                            y: intersection.point.y + intersection.angle_direction.y * 10.,
+                        },
+                        BLACK,
+                    ),
+                );
 
                 let particle_system: &ParticleSystem = game.particle_system();
                 particle_system.add_particle(
                     Particle::new(
                         ParticlePixel { position: intersection.point, color: RED, alpha: 1.0 },
-                        dir_following_ray_reflected_inverted,
+                        intersection.angle_direction,
                         0.4 + random() * 0.3,
                         1500,
                         particle_velocity_increasing,
