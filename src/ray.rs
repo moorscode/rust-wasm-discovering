@@ -1,6 +1,7 @@
 use std::cell::RefCell;
 use std::rc::Rc;
-use crate::{Line, Point2d};
+use crate::Point2d;
+use crate::shapes::Line;
 
 struct Direction {
     vector: Point2d,
@@ -32,11 +33,6 @@ impl Ray {
             source,
             direction,
         }
-    }
-
-    pub fn look_at(&self, point: Point2d) -> () {
-        let mut direction = self.direction.borrow_mut();
-        direction.vector = Ray::create_direction(self.source, point);
     }
 
     pub fn direction(&self) -> Point2d {

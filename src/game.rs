@@ -1,39 +1,10 @@
 use std::{cell::RefCell, cell::Ref, rc::Rc, f64, cell::RefMut};
-use chrono::{DateTime, Utc};
-use wasm_bindgen::JsCast;
-use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement, Window, Document};
+use wasm_bindgen::closure::Closure;
+use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement};
 
-use crate::{Draw, Point2d};
+use crate::{Browser, Draw, Point2d};
 use crate::particle_system::ParticleSystem;
 use crate::shapes::Shapes;
-
-fn window() -> Window {
-    web_sys::window().expect("no global `window` exists")
-}
-
-fn document() -> Document {
-    window()
-        .document()
-        .expect("should have a document on window")
-}
-
-fn canvas(id: &str) -> HtmlCanvasElement {
-    document()
-        .query_selector(id)
-        .unwrap()
-        .unwrap()
-        .dyn_into::<HtmlCanvasElement>()
-        .expect("No canvas found.")
-}
-
-fn context(canvas: &HtmlCanvasElement) -> CanvasRenderingContext2d {
-    canvas
-        .get_context("2d")
-        .expect("No context created.")
-        .unwrap()
-        .dyn_into::<CanvasRenderingContext2d>()
-        .expect("Could not be fetched as internal object.")
-}
 
 struct Inner {
     mouse: Option<Point2d>,
@@ -50,14 +21,12 @@ impl Default for Inner {
 #[derive(Clone)]
 pub struct View {
     pub offset: Point2d,
-    initial: Point2d,
     pub center: Point2d,
 }
 
 impl View {
     pub fn new(point: Point2d) -> Self {
         Self {
-            initial: point,
             offset: point,
             center: Point2d { x: 0., y: 0. },
         }
@@ -74,16 +43,15 @@ pub struct Game {
     canvas: HtmlCanvasElement,
     context: CanvasRenderingContext2d,
     particle_system: ParticleSystem,
-    time: DateTime<Utc>,
 }
 
 impl Game {
     pub fn create(id: &str) -> Self {
-        let canvas: HtmlCanvasElement = canvas(id);
-        let context: CanvasRenderingContext2d = context(&canvas);
+        let canvas: HtmlCanvasElement = Browser::canvas(id);
+        let context: CanvasRenderingContext2d = Browser::context(&canvas);
 
         let offset: Point2d = Point2d { x: canvas.width() as f64 / 2., y: canvas.height() as f64 / 2. };
-        let view: View = View::new( offset );
+        let view: View = View::new(offset);
 
         let particle_system = ParticleSystem::default();
 
@@ -92,7 +60,6 @@ impl Game {
             view: Rc::new(RefCell::new(view)),
             context,
             canvas,
-            time: Utc::now(),
             particle_system,
         }
     }
@@ -138,11 +105,22 @@ impl Game {
         &self.canvas
     }
 
-    pub fn time(&self) -> DateTime<Utc> {
-        self.time
-    }
-
     pub fn particle_system(&self) -> &ParticleSystem {
         &self.particle_system
+    }
+
+    pub fn run(&self, tick: fn(game: &Game)) {
+        let f = Rc::new(RefCell::new(None));
+        let g = f.clone();
+
+        let game = self.clone();
+
+        *g.borrow_mut() = Some(Closure::new(move || {
+            (tick)(&game);
+
+            Browser::request_animation_frame(f.borrow().as_ref().unwrap());
+        }));
+
+        Browser::request_animation_frame(g.borrow().as_ref().unwrap());
     }
 }

@@ -1,6 +1,8 @@
 use chrono::{Duration};
-use crate::{ParticlePixel, Point2d};
+use crate::particle::ParticlePixel;
+use crate::Point2d;
 
+#[allow(dead_code)]
 pub fn particle_tick_move(start_pixel: &ParticlePixel, current_pixel: Option<ParticlePixel>, direction: &Point2d, velocity: &f64, delta: Duration, lifetime: &u32) -> Option<ParticlePixel> {
     let delta_milliseconds: f64 = delta.num_milliseconds() as f64;
     if delta_milliseconds > *lifetime as f64 {
@@ -21,6 +23,7 @@ pub fn particle_tick_move(start_pixel: &ParticlePixel, current_pixel: Option<Par
     Some(new)
 }
 
+#[allow(dead_code)]
 pub fn particle_tick_move_and_fade_out(start_pixel: &ParticlePixel, current_pixel: Option<ParticlePixel>, direction: &Point2d, velocity: &f64, delta: Duration, lifetime: &u32) -> Option<ParticlePixel> {
     let pixel = particle_tick_move(start_pixel, current_pixel, direction, velocity, delta, lifetime);
 
@@ -40,6 +43,7 @@ pub fn particle_tick_move_and_fade_out(start_pixel: &ParticlePixel, current_pixe
     Some(pixel)
 }
 
+#[allow(dead_code)]
 pub fn particle_velocity_increasing(
     velocity: &f64,
     delta: Duration,
@@ -49,6 +53,7 @@ pub fn particle_velocity_increasing(
     return velocity * (multiplier.powi(division as i32 + 1));
 }
 
+#[allow(dead_code)]
 pub fn particle_velocity_decreasing(
     velocity: &f64,
     delta: Duration,

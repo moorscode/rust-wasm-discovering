@@ -1,7 +1,8 @@
 use std::cell::{RefCell, RefMut};
 use std::rc::Rc;
 use chrono::Utc;
-use crate::{Draw, Game, Particle};
+use crate::{Draw, Game};
+use crate::particle::Particle;
 
 #[derive(Clone)]
 pub struct ParticleContainer {
