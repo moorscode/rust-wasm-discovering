@@ -1,7 +1,7 @@
 use std::cell::{RefCell, RefMut};
 use std::rc::Rc;
 use chrono::Utc;
-use crate::{Draw, Game};
+use crate::{Draw, GameEngine};
 use crate::particle::Particle;
 
 #[derive(Clone)]
@@ -49,7 +49,7 @@ impl ParticleSystem {
         }
     }
 
-    pub fn tick(&self, game: &Game) -> () {
+    pub fn tick(&self, game: &GameEngine) -> () {
         let context = game.context();
         let view = game.view();
         let time = Utc::now();
