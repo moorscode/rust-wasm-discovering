@@ -76,6 +76,18 @@ impl Draw for Particle {
             None => ()
         }
     }
+
+    fn in_view(&self, view: &View) -> bool {
+        let pixel: Option<ParticlePixel> = self.render.borrow().pixel;
+        match pixel {
+            Some(pixel) => {
+                let position = view.transform(&pixel.position);
+                position.x >= 0. && position.x <= view.size.x && position.y >= 0. && position.y <= view.size.y
+            }
+            None => false
+        }
+
+    }
 }
 
 impl Particle {

@@ -22,12 +22,16 @@ impl Default for Inner {
 pub struct View {
     pub offset: Point2d,
     pub center: Point2d,
+    pub size: Point2d,
 }
 
 impl View {
-    pub fn new(point: Point2d) -> Self {
+    pub fn new(size: Point2d ) -> Self {
+        let offset = Point2d { x: size.x / 2., y: size.y / 2. };
+
         Self {
-            offset: point,
+            offset,
+            size,
             center: Point2d { x: 0., y: 0. },
         }
     }
@@ -50,8 +54,8 @@ impl GameEngine {
         let canvas: HtmlCanvasElement = Browser::canvas(id);
         let context: CanvasRenderingContext2d = Browser::context(&canvas);
 
-        let offset: Point2d = Point2d { x: canvas.width() as f64 / 2., y: canvas.height() as f64 / 2. };
-        let view: View = View::new(offset);
+        let size: Point2d = Point2d { x: canvas.width() as f64, y: canvas.height() as f64 };
+        let view: View = View::new(size);
 
         let particle_system = ParticleSystem::default();
 

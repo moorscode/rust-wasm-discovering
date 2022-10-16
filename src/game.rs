@@ -50,7 +50,10 @@ pub fn tick(game_engine: &GameEngine) {
     let mouse: Option<Point2d> = game_engine.mouse();
     let view: Ref<View> = game_engine.view();
 
+    // For ray detection.
     let mut lines: Vec<Box<Line>> = vec![];
+
+    // All items that will be rendered.
     let mut items: Vec<Box<dyn Draw>> = vec![];
 
     let line: Box<Line> = Line::new(
