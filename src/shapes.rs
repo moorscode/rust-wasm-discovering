@@ -3,7 +3,7 @@ use std::f64;
 use rgb::RGB;
 use web_sys::CanvasRenderingContext2d;
 use crate::Draw;
-use crate::game::View;
+use crate::game_engine::View;
 
 pub fn rgb(rgb: RGB<u8>) -> String {
     format!("#{:02X}{:02X}{:02X}", rgb.r, rgb.g, rgb.b)

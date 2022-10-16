@@ -1,126 +1,157 @@
-use std::{cell::RefCell, cell::Ref, rc::Rc, f64, cell::RefMut};
-use wasm_bindgen::closure::Closure;
-use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement};
+#![allow(unused, dead_code)]
 
-use crate::{Browser, Draw, Point2d};
+use rgb::*;
+use std::cell::{RefCell, Ref};
+use std::rc::Rc;
+use js_sys::Math::random;
+use web_sys::{MouseEvent};
+use crate::browser::console_log;
+
+use crate::{Draw, GameEngine};
+use crate::shapes::*;
+use crate::particle_animation::*;
+use crate::particle::*;
+use crate::game_engine::View;
 use crate::particle_system::ParticleSystem;
-use crate::shapes::Shapes;
+use crate::ray::Ray;
+use std::borrow::Borrow;
 
-struct Inner {
-    mouse: Option<Point2d>,
-}
+const RED: RGB8 = RGB8 { r: 255, g: 0, b: 0 };
+const GREEN: RGB8 = RGB8 { r: 0, g: 255, b: 0 };
+const WHITE: RGB8 = RGB8 { r: 255, g: 255, b: 255 };
+const BLACK: RGB8 = RGB8 { r: 0, g: 0, b: 0 };
 
-impl Default for Inner {
-    fn default() -> Self {
-        Inner {
-            mouse: None
-        }
-    }
-}
+const DIR_UP: Point2d = Point2d { x: 0., y: -1. };
+const DIR_DOWN: Point2d = Point2d { x: 0., y: 1. };
+const DIR_LEFT: Point2d = Point2d { x: -1., y: 0. };
+const DIR_RIGHT: Point2d = Point2d { x: 1., y: 0. };
 
-#[derive(Clone)]
-pub struct View {
-    pub offset: Point2d,
-    pub center: Point2d,
-}
-
-impl View {
-    pub fn new(point: Point2d) -> Self {
+impl From<MouseEvent> for Point2d {
+    fn from(e: MouseEvent) -> Self {
         Self {
-            offset: point,
-            center: Point2d { x: 0., y: 0. },
+            x: e.offset_x() as f64,
+            y: e.offset_y() as f64,
         }
-    }
-    pub fn transform(&self, point: &Point2d) -> Point2d {
-        Point2d { x: point.x + self.offset.x, y: point.y + self.offset.y }
     }
 }
 
-#[derive(Clone)]
-pub struct Game {
-    inner: Rc<RefCell<Inner>>,
-    view: Rc<RefCell<View>>,
-    canvas: HtmlCanvasElement,
-    context: CanvasRenderingContext2d,
-    particle_system: ParticleSystem,
+pub fn handle_keypress(game_engine: &GameEngine, key_code: u32) -> () {
+    match key_code {
+        37 => { game_engine.shift_view_by(Point2d { x: 10., y: 0. }); } // left
+        38 => { game_engine.shift_view_by(Point2d { x: 0., y: 10. }); } // up
+        39 => { game_engine.shift_view_by(Point2d { x: -10., y: 0. }); } // right
+        40 => { game_engine.shift_view_by(Point2d { x: 0., y: -10. }); } // down
+        67 => { game_engine.reset_view(); } // "C"
+        _ => ()
+    }
 }
 
-impl Game {
-    pub fn create(id: &str) -> Self {
-        let canvas: HtmlCanvasElement = Browser::canvas(id);
-        let context: CanvasRenderingContext2d = Browser::context(&canvas);
+pub fn tick(game_engine: &GameEngine) {
+    let mouse: Option<Point2d> = game_engine.mouse();
+    let view: Ref<View> = game_engine.view();
 
-        let offset: Point2d = Point2d { x: canvas.width() as f64 / 2., y: canvas.height() as f64 / 2. };
-        let view: View = View::new(offset);
+    let mut lines: Vec<Box<Line>> = vec![];
+    let mut items: Vec<Box<dyn Draw>> = vec![];
 
-        let particle_system = ParticleSystem::default();
+    let line: Box<Line> = Line::new(
+        Point2d { x: 200., y: -200. },
+        Point2d { x: 200., y: 200. },
+        BLACK,
+    );
+    let line2: Box<Line> = Line::new(
+        Point2d { x: -200., y: -200. },
+        Point2d { x: -200., y: 200. },
+        BLACK,
+    );
+    let line3: Box<Line> = Line::new(
+        Point2d { x: -200., y: 200. },
+        Point2d { x: 200., y: 200. },
+        BLACK,
+    );
+    let line4: Box<Line> = Line::new(
+        Point2d { x: -200., y: -200. },
+        Point2d { x: 200., y: -200. },
+        BLACK,
+    );
 
-        Self {
-            inner: Rc::new(RefCell::new(Inner::default())),
-            view: Rc::new(RefCell::new(view)),
-            context,
-            canvas,
-            particle_system,
+    items.push(line.clone());
+    items.push(line2.clone());
+    items.push(line3.clone());
+    items.push(line4.clone());
+
+    items.push(
+        Circle::new(
+            view.center,
+            10,
+            BLACK,
+        )
+    );
+
+    lines.push(line);
+    lines.push(line2);
+    lines.push(line3);
+    lines.push(line4);
+
+    if mouse.is_some() {
+        let mouse = mouse.unwrap();
+        let view_mouse: Point2d = Point2d { x: mouse.x - view.offset.x, y: mouse.y - view.offset.y };
+        let ray = Ray::new(view.center, view_mouse);
+
+        let mut intersection = None;
+
+        for line in lines.iter() {
+            intersection = ray.intersects_line(&line);
+            if intersection.is_some() {
+                break;
+            }
         }
+
+        match intersection {
+            Some(intersection) => {
+                items.push(Line::new(
+                    view.center,
+                    intersection.point,
+                    GREEN,
+                ));
+
+                let dir_towards_center = Point2d { x: ray.direction().x * -1., y: ray.direction().y * -1. };
+
+                items.push(
+                    Line::new(
+                        intersection.point,
+                        Point2d {
+                            x: intersection.point.x + intersection.angle_direction.x * 10.,
+                            y: intersection.point.y + intersection.angle_direction.y * 10.,
+                        },
+                        BLACK,
+                    ),
+                );
+
+                let particle_system: &ParticleSystem = game_engine.particle_system();
+                particle_system.add_particle(
+                    Particle::new(
+                        ParticlePixel { position: intersection.point, color: RED, alpha: 1.0 },
+                        intersection.angle_direction,
+                        0.4 + random() * 0.3,
+                        1500,
+                        particle_velocity_increasing,
+                        particle_tick_move_and_fade_out,
+                    )
+                );
+            }
+            None => {
+                items.push(Line::new(
+                    view.center,
+                    Point2d { x: view.center.x + ray.direction().x * 1000., y: view.center.y + ray.direction().y * 1000. },
+                    BLACK,
+                ));
+            }
+        }
+
+        let ray_line: Box<Line> = Line::new(view.center, Point2d { x: view.center.x + ray.direction().x * 10., y: view.center.y + ray.direction().y * 10. }, BLACK);
+        items.push(ray_line);
     }
 
-    pub fn draw(&self, shapes: &Shapes) -> () {
-        shapes.draw(&self.context, &self.view.borrow());
-        self.particle_system.tick(self);
-    }
-
-    pub fn clear(&self) -> () {
-        self.context.clear_rect(0., 0., self.canvas.width() as f64, self.canvas.height() as f64);
-    }
-
-    pub fn set_mouse<T: Into<Point2d>>(&self, mouse: T) -> () {
-        let mut inner: RefMut<Inner> = self.inner.borrow_mut();
-        inner.mouse = Some(mouse.into());
-    }
-
-    pub fn mouse(&self) -> Option<Point2d> {
-        self.inner.borrow().mouse
-    }
-
-    pub fn view(&self) -> Ref<View> {
-        self.view.borrow()
-    }
-
-    pub fn context(&self) -> &CanvasRenderingContext2d {
-        &self.context
-    }
-
-    pub fn shift_view_by(&self, offset: Point2d) -> () {
-        let mut view = self.view.borrow_mut();
-        view.offset = Point2d { x: view.offset.x + offset.x, y: view.offset.y + offset.y };
-        view.center = Point2d { x: view.center.x - offset.x, y: view.center.y - offset.y };
-    }
-
-    pub fn reset_view(&self) -> () {
-        let mut view = self.view.borrow_mut();
-        view.offset = Point2d { x: self.canvas.width() as f64 / 2., y: self.canvas.height() as f64 / 2. };
-    }
-
-    pub fn canvas(&self) -> &HtmlCanvasElement {
-        &self.canvas
-    }
-
-    pub fn particle_system(&self) -> &ParticleSystem {
-        &self.particle_system
-    }
-
-    pub fn run(&self, tick: fn(game: &Game)) {
-        let f = Rc::new(RefCell::new(None));
-        let g = f.clone();
-
-        let game = self.clone();
-
-        *g.borrow_mut() = Some(Closure::new(move || {
-            (tick)(&game);
-
-            Browser::request_animation_frame(f.borrow().as_ref().unwrap());
-        }));
-
-        Browser::request_animation_frame(g.borrow().as_ref().unwrap());
-    }
+    game_engine.clear();
+    game_engine.draw(&Shapes { items });
 }

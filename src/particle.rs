@@ -5,7 +5,7 @@ use chrono::{DateTime, Duration, Utc};
 use rgb::RGB;
 use web_sys::CanvasRenderingContext2d;
 
-use crate::game::View;
+use crate::game_engine::View;
 use crate::{Draw, Point2d};
 use crate::shapes::rgb;
 
