@@ -15,7 +15,7 @@ use web_sys::{MouseEvent, KeyboardEvent};
 use game_engine::GameEngine;
 use crate::browser::Browser;
 use crate::draw::Draw;
-use crate::game::Game;
+use crate::game::{handle_keypress, tick};
 use crate::shapes::Point2d;
 
 macro_rules! enclose {
@@ -30,7 +30,6 @@ macro_rules! enclose {
 #[wasm_bindgen(start)]
 pub fn start() -> Result<(), JsValue> {
     let game_engine = GameEngine::create("#canvas");
-    let game = Game::new(&game_engine);
 
     // Mouse tracker.
     {
@@ -47,7 +46,7 @@ pub fn start() -> Result<(), JsValue> {
     {
         let closure = Closure::<dyn FnMut(_)>::new(
             enclose!( (game_engine) move |event:KeyboardEvent| {
-                game.handle_keypress( &game_engine, event.key_code() );
+                handle_keypress( &game_engine, event.key_code() );
             }),
         );
         Browser::window().add_event_listener_with_callback("keydown", closure.as_ref().unchecked_ref())?;
@@ -55,7 +54,7 @@ pub fn start() -> Result<(), JsValue> {
     }
 
 
-    game_engine.run(move |game_engine| { game.tick(&game_engine); });
+    game_engine.run(tick);
 
     Ok(())
 }

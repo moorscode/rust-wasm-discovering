@@ -1,6 +1,6 @@
 use std::{cell::RefCell, cell::Ref, rc::Rc, f64, cell::RefMut};
 use wasm_bindgen::closure::Closure;
-use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement, MouseEvent};
+use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement};
 
 use crate::{Browser, Draw, Point2d};
 use crate::particle_system::ParticleSystem;
@@ -109,12 +109,14 @@ impl GameEngine {
         &self.particle_system
     }
 
-    pub fn run<F>(&self, tick: F) where F: Fn(GameEngine) + 'static {
+    pub fn run(&self, tick: fn(game_engine: &GameEngine)) {
         let f = Rc::new(RefCell::new(None));
         let g = f.clone();
 
+        let game = self.clone();
+
         *g.borrow_mut() = Some(Closure::new(move || {
-            tick(self.clone());
+            tick(&game);
 
             Browser::request_animation_frame(f.borrow().as_ref().unwrap());
         }));
